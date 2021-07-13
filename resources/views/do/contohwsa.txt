@@ -1,0 +1,216 @@
+public function createdoTemp(Request $req) {
+	
+        if($req->data == ''){
+            session()->flash('error','Please Select at least 1 data');
+            return back();
+        }else{
+	    $test = array();
+	    $batasatas = 0;
+	    $jumlahsama = 0;
+	    $errormsg = "";
+	    $itembefore = "";
+            $validate   = "";
+            $val        = "";
+            DB::table('so_temp')
+                ->where('so_user',Session::get('username'))
+                ->delete();
+	    $testvar = '';
+            foreach($req->data as $data){
+                $show = DB::table('so_dets')
+                        ->join('so_mstrs','so_mstrs.so_nbr','=','so_dets.so_nbr')
+                        ->join('items','itemcode','=','so_itemcode')
+                        ->join('customers','cust_code','=','so_cust')
+                        ->where('so_dets.so_nbr',$data)
+                        ->get();
+				 
+		
+
+		foreach($show as $show){
+		$dow= DB::table('dod_det')
+			->select('dod_qty')
+                        ->where('dod_part','=',$show->so_itemcode)
+			->where('dod_status','=',1 || dod_status,'=',4)
+			->sum('dod_qty');
+		
+		// Validasi WSA --> SPB
+
+
+		// Validasi WSA
+		$qxUrl          = 'http://qadeedpaint.svr:8080/wsatrain/wsa1';
+		$qxReceiver     = '';
+		$qxSuppRes      = 'false';
+		$qxScopeTrx     = '';
+		$qdocName       = '';
+		$qdocVersion    = '';
+		$dsName         = '';
+        
+		$timeout        = 0;
+
+		// ** Edit here
+		$qdocRequest =   '<Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/">
+    					<Body>
+        				  <sisaQty xmlns="urn:iris.co.id:wsatrain">
+            					<inpdomain>'.'DKH'.'</inpdomain>
+            					<inpart>'.$show->so_itemcode.'</inpart>
+            					<insite>'.Session::get('site').'</insite>
+        				  </sisaQty>
+    					</Body>
+				</Envelope>';
+  
+		$curlOptions = array(CURLOPT_URL => $qxUrl,
+							 CURLOPT_CONNECTTIMEOUT => $timeout,        // in seconds, 0 = unlimited / wait indefinitely.
+							 CURLOPT_TIMEOUT => $timeout + 120, // The maximum number of seconds to allow cURL functions to execute. must be greater than CURLOPT_CONNECTTIMEOUT
+							 CURLOPT_HTTPHEADER => $this->httpHeader($qdocRequest),
+							 CURLOPT_POSTFIELDS => preg_replace("/\s+/", " ", $qdocRequest),
+							 CURLOPT_POST => true,
+							 CURLOPT_RETURNTRANSFER => true,
+							 CURLOPT_SSL_VERIFYPEER => false,
+							 CURLOPT_SSL_VERIFYHOST => false);
+					 
+		$getInfo = '';
+		$httpCode = 0;
+		$curlErrno = 0;
+		$curlError = '';
+		$qdocResponse = '';
+
+		$curl = curl_init();
+		if ($curl) {
+			curl_setopt_array($curl, $curlOptions);
+			$qdocResponse = curl_exec($curl);           // sending qdocRequest here, the result is qdocResponse.
+			$curlErrno    = curl_errno($curl);
+			$curlError    = curl_error($curl);
+			$first        = true;
+		
+			foreach (curl_getinfo($curl) as $key=>$value) {
+				if (gettype($value) != 'array') {
+					if (! $first) $getInfo .= ", ";
+					$getInfo = $getInfo . $key . '=>' . $value;
+					$first = false;
+					if ($key == 'http_code') $httpCode = $value;
+				}
+			}
+			curl_close($curl);
+			
+		}
+		
+		   
+		$xmlResp = simplexml_load_string($qdocResponse);       
+	
+		$xmlResp->registerXPathNamespace('ns1', 'urn:iris.co.id:wsatrain');  
+		
+		
+		//dd($xmlResp->xpath('//ns1:t_qty'));
+		if($xmlResp->xpath('//ns1:t_qty') == null){
+		DB::table('so_temp')
+                   ->insert([
+                    "so_nbr"        => $show->so_nbr,
+                    "so_cust"       => $show->so_cust,
+                    "so_custname"   => $show->cust_desc,
+                    "so_duedate"    => $show->so_duedate,
+                    "so_line"       => $show->so_line,
+                    "so_itemcode"   => $show->so_itemcode,
+                    "so_itemdesc"   => $show->itemdesc,
+                    "so_um"         => $show->so_um,
+                    "so_qtyso"      => $show->so_qty,
+                    "so_qtyopen"    => $show->so_qty_open,
+                    "so_user"       => Session::get('username'),
+                    "so_site"       => $show->so_site,
+                    "so_shipto"     => $show->so_shipto,
+                    "so_qtyd"       => 0,
+		    "so_qtystock"   => 0,
+		]);
+		}
+		else{
+		   $batasatas = $xmlResp->xpath('//ns1:t_qty')[0];
+		   $testbatas = $batasatas - $dow;
+		   $doutest = doubleval($show->so_qty_open);
+		   if($doutest < $testbatas){
+		   
+                   DB::table('so_temp')
+                   ->insert([
+                    "so_nbr"        => $show->so_nbr,
+                    "so_cust"       => $show->so_cust,
+                    "so_custname"   => $show->cust_desc,
+                    "so_duedate"    => $show->so_duedate,
+                    "so_line"       => $show->so_line,
+                    "so_itemcode"   => $show->so_itemcode,
+                    "so_itemdesc"   => $show->itemdesc,
+                    "so_um"         => $show->so_um,
+                    "so_qtyso"      => $show->so_qty,
+                    "so_qtyopen"    => $show->so_qty_open,
+                    "so_user"       => Session::get('username'),
+                    "so_site"       => $show->so_site,
+                    "so_shipto"     => $show->so_shipto,
+                    "so_qtyd"       => $show->so_qty_open,
+		    "so_qtystock"   => $testbatas,
+                ]);
+	    }
+		
+		elseif($doutest == $testbatas ||$doutest > $testbatas && $testbatas >=0 ){
+		DB::table('so_temp')
+                   ->insert([
+                    "so_nbr"        => $show->so_nbr,
+                    "so_cust"       => $show->so_cust,
+                    "so_custname"   => $show->cust_desc,
+                    "so_duedate"    => $show->so_duedate,
+                    "so_line"       => $show->so_line,
+                    "so_itemcode"   => $show->so_itemcode,
+                    "so_itemdesc"   => $show->itemdesc,
+                    "so_um"         => $show->so_um,
+                    "so_qtyso"      => $show->so_qty,
+                    "so_qtyopen"    => $show->so_qty_open,
+                    "so_user"       => Session::get('username'),
+                    "so_site"       => $show->so_site,
+                    "so_shipto"     => $show->so_shipto,
+                    "so_qtyd"       => $testbatas,
+		    "so_qtystock"   => $testbatas,
+                ]);
+        }
+	
+		elseif($testbatas < 0){
+		
+		DB::table('so_temp')
+                   ->insert([
+                    "so_nbr"        => $show->so_nbr,
+                    "so_cust"       => $show->so_cust,
+                    "so_custname"   => $show->cust_desc,
+                    "so_duedate"    => $show->so_duedate,
+                    "so_line"       => $show->so_line,
+                    "so_itemcode"   => $show->so_itemcode,
+                    "so_itemdesc"   => $show->itemdesc,
+                    "so_um"         => $show->so_um,
+                    "so_qtyso"      => $show->so_qty,
+                    "so_qtyopen"    => $show->so_qty_open,
+                    "so_user"       => Session::get('username'),
+                    "so_site"       => $show->so_site,
+                    "so_shipto"     => $show->so_shipto,
+                    "so_qtyd"       => 0,
+		    "so_qtystock"   => $testbatas,
+                ]);		
+
+		}
+		
+
+		
+	    }
+		    if ($validate != "" && $validate != $show->so_cust) {
+                        return redirect()->back()->with('error', 'Customer');
+                    }
+
+                    if ($val != "" && $val != $show->so_shipto) {
+                        return redirect()->back()->with('error', 'Ship To');
+                    }
+
+                    $validate   = $show->so_cust;
+                    $val        = $show->so_shipto;
+
+	}
+               }
+
+                    
+
+}
+            
+
+            return redirect()->route('dotemp');
+        }

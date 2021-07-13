@@ -1,0 +1,114 @@
+@media screen and (max-width: 720px) {
+
+    .mini-table {
+      border: 0;
+    }
+
+    .mini-table thead {
+        display: none;
+    }
+
+    .mini-table tr {
+        margin-bottom: 10px;
+        display: block;
+        border-bottom: 15px block #ddd;
+    }
+        
+    .foottr{
+        margin-top : 30px !important;
+        margin-bottom: 60px !important;
+        border-bottom: 0px !important;
+    }
+    .foottr .foot1{
+        border-bottom: 1px solid black !important;
+        background-color: #3b8686;
+        color: white !important;
+        padding:15px !important;
+    }
+        
+    .foottr .foot2{
+        border-bottom : 1px solid black !important;
+        padding:15px !important;
+    }
+        
+    .foottr .footend{
+        border-bottom: 1px solid black !important;
+        padding: 15px !important;
+    }
+        
+
+    .mini-table td {
+        display: block;
+        text-align: right;
+        font-size: 13px;
+        border-bottom: 1px dotted #ccc;
+    }
+
+    .mini-table td:last-child {
+        border-bottom: 0;
+    }
+
+    .mini-table td:before {
+        content: attr(data-label);
+        float: left;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+
+    .select2-selection{
+        text-align: left !important;
+    }
+}
+
+
+.btn-light{
+  color: black;
+  background-color: white;
+  border-color: #757171;
+}
+.btn-light:hover {
+  color: black;
+  background-color: white;
+  border-color: black;
+}
+
+.btn-light:not(:disabled):not(.disabled).active, .btn-light:not(:disabled):not(.disabled):active, .show>.btn-light.dropdown-toggle {
+  color: black;
+  background-color: white;
+  border-color: white;
+}
+.dropdown-item.active, .dropdown-item:active {
+  color: black;
+  text-decoration: none;
+   background-color: #79DAFD; 
+}
+
+.dropdown-item:focus, .dropdown-item:hover {
+  color: #16181b;
+  text-decoration: none;
+  background-color: #79DAFD;
+}
+
+.showact {
+  position: relative;
+  display: inline-block;
+}
+
+.showact:hover::after {
+  position: absolute;
+  content: attr(data-tooltip);
+  top: -2.5em;
+  right: -2em;
+  background-color: #333;
+  color: white;
+  padding: .5em 1.5em;
+  font-size: .8em;
+  white-space: nowrap;
+}
+
+
+@media screen and (max-width: 672px) {
+  .dropdown-menu.show {
+      width: 250px;
+  }
+}
